@@ -1,0 +1,8 @@
+{
+  "appId": "com.arcadehub.defis",
+  "appName": "Choisis ton Défi",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": true
+  }
+}
