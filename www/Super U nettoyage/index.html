@@ -1,0 +1,1591 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Super U - Ménage Simulator</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100dvh;
+            margin: 0;
+            padding: 8px 12px;
+            background-color: #f1f5f9; 
+            color: #0055A4;
+            font-family: 'Montserrat', sans-serif;
+            overflow: hidden; 
+            touch-action: none; 
+        }
+
+        #topBar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            height: 58px;
+            padding: 4px 10px;
+            margin-bottom: 8px;
+            background: #ffffff;
+            border-radius: 18px;
+            border: 3.5px solid #0055A4;
+            box-shadow: 0 4px 14px rgba(0, 85, 164, 0.1);
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        #leftSlot {
+            position: relative;
+            display: flex;
+            align-items: center;
+            height: 100%;
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        #gameTitle {
+            font-size: clamp(11px, 2.8vw, 15px); 
+            white-space: nowrap; 
+            margin: 0;
+            color: #0055A4;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            font-weight: 900;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .u-red { color: #E30613; }
+
+        #roccoContainer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: flex;
+            align-items: center;
+            height: 100%;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        #roccoContainer.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #roccoImg {
+            height: 48px;
+            width: auto;
+            object-fit: contain;
+            display: block;
+        }
+
+        #phoneIcon {
+            display: none;
+            font-size: 26px;
+            line-height: 1;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+            animation: ring 0.6s ease-in-out infinite alternate;
+        }
+
+        @keyframes ring {
+            0% { transform: rotate(-12deg); }
+            100% { transform: rotate(12deg); }
+        }
+
+        #roccoSpeech {
+            position: absolute;
+            left: 48px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #ffffff;
+            border: 1.5px solid #0055A4;
+            color: #0055A4;
+            font-size: 8px;
+            line-height: 1.15;
+            font-weight: 800;
+            padding: 3px 6px;
+            border-radius: 8px;
+            white-space: normal;
+            width: max-content;
+            max-width: 95px;
+            text-align: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+            z-index: 20;
+        }
+
+        #roccoSpeech::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -5px;
+            transform: translateY(-50%);
+            border-width: 4px 5px 4px 0;
+            border-style: solid;
+            border-color: transparent #0055A4 transparent transparent;
+            display: block;
+            width: 0;
+        }
+
+        .top-ten-btn {
+            background: none;
+            border: none;
+            color: #E30613;
+            cursor: pointer;
+            padding: 0 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.1;
+            margin-left: auto;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+
+        .top-ten-btn span.title {
+            font-size: clamp(10px, 2.7vw, 13px);
+            font-weight: 900;
+            color: #E30613;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .top-ten-btn span.num {
+            font-size: clamp(12px, 3vw, 15px);
+            font-weight: 900;
+            color: #E30613;
+            text-decoration: underline;
+        }
+
+        #scoreboard {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 2px;
+            font-size: clamp(10px, 2.7vw, 13px);
+            font-weight: 900;
+            color: #ffffff;
+            background: #003974;
+            padding: 6px 12px;
+            border-radius: 18px;
+            border: 2.5px solid #E30613;
+            box-shadow: 0 3px 8px rgba(0, 85, 164, 0.25);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            flex: 1 1 auto;
+            border-radius: 22px;
+            border: 4.5px solid #0055A4;
+            background-color: #ffffff; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08); 
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        canvas {
+            display: block;
+            touch-action: none;
+        }
+
+        .overlayScreen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #0055A4;
+            text-align: center;
+            padding: 16px;
+        }
+
+        #startScreen { z-index: 10; }
+        
+        #gameOverScreen {
+            display: none;
+            z-index: 5;
+            animation: fadeIn 0.25s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.94); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        h1.cheh-title {
+            font-size: 34px;
+            margin: 0;
+            color: #E30613;
+            letter-spacing: 1.5px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .overlayScreen p.score-text {
+            font-size: 18px;
+            font-weight: 800;
+            margin: 8px 0;
+            background: #0055A4;
+            color: #ffffff;
+            padding: 6px 20px;
+            border-radius: 25px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        #leaderboardContainer {
+            background: #f8fafc;
+            border: 3px solid #0055A4;
+            border-radius: 12px;
+            padding: 8px 12px;
+            margin: 8px 0;
+            width: 90%;
+            max-width: 300px;
+            max-height: 140px;
+            overflow-y: auto;
+        }
+
+        #leaderboardContainer h3 {
+            margin: 0 0 6px 0;
+            color: #E30613;
+            text-transform: uppercase;
+            font-size: 13px;
+            font-weight: 900;
+        }
+
+        .leaderboard-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 12px; 
+            text-align: left;
+            font-weight: 700;
+        }
+
+        .leaderboard-entry {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            border-bottom: 1.5px dotted #cbd5e1;
+            padding-bottom: 3px;
+        }
+
+        .leaderboard-entry .rank { color: #E30613; width: 25px; }
+        .leaderboard-entry .name { color: #0055A4; max-width: 175px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .leaderboard-entry .score { color: #E30613; font-weight: 900; }
+
+        input[type="text"] {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+            outline: none;
+        }
+
+        button.action-btn {
+            margin-top: 5px;
+            padding: 9px 18px;
+            width: 86%;
+            max-width: 250px;
+            font-size: 13px;
+            background-color: #E30613;
+            color: #ffffff;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 0px #a10008;
+            transition: all 0.1s;
+            font-weight: 800;
+            text-transform: uppercase;
+            font-family: inherit;
+            letter-spacing: 0.5px;
+        }
+
+        button.action-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0px #a10008;
+        }
+
+        button.action-btn.btn-easy {
+            background-color: #ec4899;
+            box-shadow: 0 4px 0px #be185d;
+        }
+        button.action-btn.btn-easy:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0px #be185d;
+        }
+
+        button.action-btn.btn-normal {
+            background: linear-gradient(135deg, #475569, #1e293b);
+            box-shadow: 0 4px 0px #0f172a;
+            border: 1px solid #94a3b8;
+        }
+        button.action-btn.btn-normal:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0px #0f172a;
+        }
+
+        button.action-btn.btn-hard {
+            background-color: #0055A4;
+            border: 1.5px solid #E30613;
+            box-shadow: 0 4px 0px #003366;
+        }
+        button.action-btn.btn-hard:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0px #003366;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.65);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background-color: #ffffff;
+            border: 4px solid #0055A4;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 360px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #E30613;
+            padding-bottom: 6px;
+        }
+
+        .modal-header h3 { font-size: 16px; color: #0055A4; margin: 0; font-weight: 900; }
+        .close-modal { background: none; border: none; color: #E30613; font-size: 24px; cursor: pointer; padding: 0; font-weight: 900; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="topBar">
+        <div id="leftSlot">
+            <h1 id="gameTitle">SUPER <span class="u-red">U</span> MÉNAGE</h1>
+
+            <div id="roccoContainer">
+                <img id="roccoImg" src="Rocco.png" alt="Rocco" onerror="this.style.display='none'">
+                <div id="phoneIcon">📱</div>
+                <div id="roccoSpeech">Faites un tour<br>en zone promo</div>
+            </div>
+        </div>
+
+        <button class="top-ten-btn" onclick="openLeaderboard()">
+            <span class="title">🏆 TOP</span>
+            <span class="num">10</span>
+        </button>
+
+        <div id="scoreboard">
+            <div id="scoreDisplay">🧼 PROPRETÉ: 0</div>
+            <div id="highScoreDisplay">👑 RECORD: 0</div>
+        </div>
+    </div>
+    
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="startScreen" class="overlayScreen">
+            <h2 style="color: #0055A4; font-size: 19px; text-transform: uppercase; font-weight: 900; margin-bottom: 2px;">MISE EN ROUTE AUTOLAVEUSE 🧼</h2>
+            <p style="font-size: 11px; font-weight: 700; color: #555; margin-bottom: 6px;">Choisissez votre défi :</p>
+            
+            <div style="text-align: left; background: #fff; padding: 6px 10px; border-radius: 12px; border: 2px solid #0055A4; margin-bottom: 8px; font-size: 10.5px; font-weight: 800; width: 90%; max-width: 290px;">
+                <div style="color: #64748b; margin-bottom: 2px;">🧻 Mouchoir (Commun - 50%) <span style="float: right;">+10 pts</span></div>
+                <div style="color: #8b4513; margin-bottom: 2px;">☕ Tache (Peu commun - 24%) <span style="float: right;">+20 pts</span></div>
+                <div style="color: #22c55e; margin-bottom: 2px;">🍾 Bouteille (Rare - 15%) <span style="float: right;">+45 pts</span></div>
+                <div style="color: #a855f7; margin-bottom: 2px;"><span style="color: #eab308;">🟡</span> Pipi (Épique - 8%) <span style="float: right;">+80 pts</span></div>
+                <div style="color: #fbbf24;">👑 Caca doré (Légendaire - 3%) <span style="float: right;">+150 pts</span></div>
+            </div>
+
+            <button class="action-btn btn-easy" onclick="startGame('easy')">🌸 Tapette</button>
+            <button class="action-btn btn-normal" onclick="startGame('normal')">💪 Tes un Homme</button>
+            <button class="action-btn btn-hard" onclick="startGame('hard')">🛒 Condition réelle</button>
+        </div>
+
+        <div id="gameOverScreen" class="overlayScreen">
+            <h1 class="cheh-title">ACCIDENT !</h1>
+            <p class="score-text">Score : <span id="finalScore" style="color:#ffcc00;">0</span></p>
+            
+            <div id="scoreForm" style="margin-bottom: 8px; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                <input type="text" id="playerNameInput" maxlength="15" placeholder="Votre pseudo (15 max)" style="padding: 8px; width: 210px; border-radius: 8px; border: 2px solid #0055A4; text-align: center; text-transform: uppercase; font-size: 13px; font-weight: 800;">
+                <button class="action-btn" onclick="validerScore()" style="margin-top: 0; width: 220px; padding: 8px;">Enregistrer le score</button>
+            </div>
+            <div id="scoreSubmittedMsg" style="display:none; color: #22c55e; font-weight: 900; margin-bottom: 8px; font-size: 14px;">✅ Score enregistré !</div>
+
+            <div id="leaderboardContainer">
+                <h3>Employés du mois</h3>
+                <ul id="leaderboardList" class="leaderboard-list">
+                    <li>Chargement...</li>
+                </ul>
+            </div>
+
+            <button class="action-btn" onclick="resetGame()" style="margin-top: 4px;">Reprendre le service</button>
+        </div>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div id="leaderboardModal" class="modal hidden" onclick="closeLeaderboard()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>🏆 Top 10 - Employés du mois</h3>
+                <button class="close-modal" onclick="closeLeaderboard()">&times;</button>
+            </div>
+            <ul id="modalLeaderboardList" class="leaderboard-list" style="max-height: 240px; overflow-y: auto; margin-bottom: 12px;">
+                <li>Chargement...</li>
+            </ul>
+            <button class="action-btn" style="width: 100%;" onclick="closeLeaderboard()">Retour au rayon</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "https://api-super-u.kjh27r4i-70a.workers.dev";
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const GRID_COLS = 27; 
+        const CAISSE_COLS = [5, 9, 13, 17, 21];
+        const CAISSE_NUMS = ["8", "3", "9", "3", "8"];
+
+        let gridSize = 16;
+        let gridRows = 55;
+        let dx = 0, dy = 0;
+        let snake = [];
+        let foods = [];
+        let inputQueue = [];
+        let isGameOverState = false;
+        let gameLoopTimeout;
+        let gameStarted = false;
+        
+        let score = 0;
+        let top10 = [];
+        let vitesseJeu = 150; 
+
+        let gameMode = 'normal';
+        let shoppers = [];
+        let shopperSpawnTimer = 0;
+        let shopperMoveCounter = 0;
+
+        const ROCCO_MESSAGES = [
+            { text: "Faites un tour<br>en zone promo", zone: "promo", count: 5 },
+            { text: "Essayez de passer<br>devant les caisses", zone: "caisses", count: 4 },
+            { text: "Un box de picon est tombé<br>dans les alcools", zone: "alcools", count: 7 }
+        ];
+        let currentMessageIndex = 0;
+
+        let roccoCycleTimeout = null;
+        let roccoHideTimeout = null;
+
+        function setAlertVisible(show, isPhone = false, customText = "", customZone = "", customCount = 0) {
+            const roccoEl = document.getElementById("roccoContainer");
+            const titleEl = document.getElementById("gameTitle");
+            const roccoImg = document.getElementById("roccoImg");
+            const phoneIcon = document.getElementById("phoneIcon");
+            const speechEl = document.getElementById("roccoSpeech");
+
+            if (show) {
+                if (isPhone) {
+                    roccoImg.style.display = "none";
+                    phoneIcon.style.display = "block";
+                    speechEl.innerHTML = customText;
+                    spawnZoneFoods(customZone, customCount);
+                } else {
+                    phoneIcon.style.display = "none";
+                    roccoImg.style.display = "block";
+                    const step = ROCCO_MESSAGES[currentMessageIndex];
+                    speechEl.innerHTML = step.text;
+                    spawnZoneFoods(step.zone, step.count);
+                    currentMessageIndex = (currentMessageIndex + 1) % ROCCO_MESSAGES.length;
+                }
+
+                titleEl.style.opacity = "0";
+                roccoEl.classList.add("visible");
+            } else {
+                roccoEl.classList.remove("visible");
+                titleEl.style.opacity = "1";
+            }
+        }
+
+        function scheduleNextMessage() {
+            clearTimeout(roccoCycleTimeout);
+            clearTimeout(roccoHideTimeout);
+
+            if (gameMode === 'hard') {
+                // Condition réelle : appel téléphonique toutes les 10 secondes
+                roccoCycleTimeout = setTimeout(() => {
+                    if (!gameStarted || isGameOverState || gameMode !== 'hard') return;
+                    setAlertVisible(true, true, "Vous pouvez passer un coup<br>devant les caisses", "caisses", 6);
+
+                    roccoHideTimeout = setTimeout(() => {
+                        setAlertVisible(false);
+                        if (gameStarted && !isGameOverState && gameMode === 'hard') {
+                            scheduleNextMessage();
+                        }
+                    }, 4000);
+                }, 10000);
+
+            } else if (gameMode === 'normal') {
+                // Tes un Homme : Rocco toutes les 45 secondes
+                roccoCycleTimeout = setTimeout(() => {
+                    if (!gameStarted || isGameOverState || gameMode !== 'normal') return;
+                    setAlertVisible(true, false);
+
+                    roccoHideTimeout = setTimeout(() => {
+                        setAlertVisible(false);
+                        if (gameStarted && !isGameOverState && gameMode === 'normal') {
+                            scheduleNextMessage();
+                        }
+                    }, 5000);
+                }, 45000);
+            }
+        }
+
+        function startMessageCycle() {
+            if (gameMode === 'easy') {
+                stopMessageCycle();
+                return;
+            }
+            currentMessageIndex = 0;
+            setAlertVisible(false);
+            scheduleNextMessage();
+        }
+
+        function stopMessageCycle() {
+            clearTimeout(roccoCycleTimeout);
+            clearTimeout(roccoHideTimeout);
+            setAlertVisible(false);
+        }
+
+        const DECHETS = [
+            { type: "Mouchoir", proba: 0.50, points: 10, color: "#94a3b8" },
+            { type: "Tache", proba: 0.24, points: 20, color: "#8b4513", emoji: "💩" },
+            { type: "Bouteille", proba: 0.15, points: 45, color: "#22c55e", emoji: "🍾" },
+            { type: "Pipi", proba: 0.08, points: 80, color: "#a855f7" },
+            { type: "Caca d'or", proba: 0.03, points: 150, color: "#fbbf24", emoji: "👑" }
+        ];
+
+        let particles = [];
+        let floatingTexts = [];
+
+        let audioCtx;
+        let currentAudio = null;
+        let currentAudioIndex = 0;
+        const audioFiles = ['Audio001.mp3', 'Audio002.mp3', 'Audio003.mp3', 'Audio004.mp3', 'Audio005.mp3'];
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playNextMusic() {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+            currentAudio = new Audio(audioFiles[currentAudioIndex]);
+            currentAudio.volume = 0.4;
+            currentAudio.onended = () => {
+                currentAudioIndex = (currentAudioIndex + 1) % audioFiles.length;
+                playNextMusic();
+            };
+            currentAudio.play().catch(e => console.log("Audio:", e));
+        }
+
+        function stopMusic() {
+            if (currentAudio) currentAudio.pause();
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            if (type === 'eat') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(550, now);
+                osc.frequency.exponentialRampToValueAtTime(1100, now + 0.1);
+                gainNode.gain.setValueAtTime(0.12, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now);
+                osc.stop(now + 0.18);
+            } else if (type === 'die') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(160, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 0.45);
+                gainNode.gain.setValueAtTime(0.2, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+                osc.start(now);
+                osc.stop(now + 0.5);
+            }
+        }
+
+        async function chargerClassement() {
+            try {
+                const reponse = await fetch(API_URL);
+                const data = await reponse.json();
+                if (Array.isArray(data)) {
+                    top10 = data;
+                    updateHighScoreDisplay();
+                    renderLeaderboard();
+                }
+            } catch (e) {
+                console.error("Erreur classement :", e);
+            }
+        }
+
+        async function envoyerScore(nom, scoreFinal) {
+            try {
+                const reponse = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: nom, score: scoreFinal })
+                });
+                const res = await reponse.json();
+                if (res && res.scores) top10 = res.scores;
+                chargerClassement();
+            } catch (e) {
+                console.error("Erreur envoi score :", e);
+            }
+        }
+
+        async function validerScore() {
+            const nameInput = document.getElementById("playerNameInput");
+            const name = nameInput.value.trim().substring(0, 15).toUpperCase() || "EMPLOYÉ";
+            await envoyerScore(name, score);
+            document.getElementById("scoreForm").style.display = "none";
+            document.getElementById("scoreSubmittedMsg").style.display = "block";
+        }
+
+        function openLeaderboard() {
+            document.getElementById("leaderboardModal").classList.remove("hidden");
+            renderModalLeaderboard();
+            chargerClassement();
+        }
+        function closeLeaderboard() {
+            document.getElementById("leaderboardModal").classList.add("hidden");
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+
+        function updateHighScoreDisplay() {
+            let highest = top10.length > 0 ? top10[0].score : 0;
+            document.getElementById("highScoreDisplay").innerHTML = "👑 RECORD: " + highest;
+        }
+
+        function renderLeaderboard() {
+            const listElement = document.getElementById("leaderboardList");
+            listElement.innerHTML = "";
+            if (top10.length === 0) {
+                listElement.innerHTML = "<li style='text-align:center; color:#999;'>Aucune donnée</li>";
+                return;
+            }
+            top10.forEach((entry, index) => {
+                const li = document.createElement("li");
+                li.className = "leaderboard-entry";
+                li.innerHTML = `<span class="rank">#${index + 1}</span><span class="name">${escapeHtml(entry.name)}</span><span class="score">${entry.score}</span>`;
+                listElement.appendChild(li);
+            });
+            renderModalLeaderboard();
+        }
+
+        function renderModalLeaderboard() {
+            const listEl = document.getElementById("modalLeaderboardList");
+            if(!listEl) return;
+            listEl.innerHTML = "";
+            if (top10.length === 0) {
+                listEl.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>Aucune donnée</li>";
+                return;
+            }
+            top10.forEach((entry, index) => {
+                const li = document.createElement("li");
+                li.className = "leaderboard-entry";
+                li.innerHTML = `<span class="rank">#${index + 1}</span><span class="name">${escapeHtml(entry.name)}</span><span class="score">${entry.score} pts</span>`;
+                listEl.appendChild(li);
+            });
+        }
+
+        function resizeGameCanvas() {
+            const container = document.getElementById('gameContainer');
+            const rect = container.getBoundingClientRect();
+            
+            gridSize = Math.floor(rect.width / GRID_COLS);
+            gridRows = Math.floor(rect.height / gridSize);
+
+            canvas.width = GRID_COLS * gridSize;
+            canvas.height = gridRows * gridSize;
+        }
+
+        function getShelfBounds() {
+            const cols = [5, 10, 16, 21];
+            const midRow = Math.floor(gridRows * 0.48);
+            const shelfLength = 13;
+
+            const topEndRow = midRow - 3;
+            const topStartRow = topEndRow - shelfLength + 1;
+
+            const bottomStartRow = midRow + 3;
+            const bottomEndRow = bottomStartRow + shelfLength - 1;
+
+            return { cols, topStartRow, topEndRow, bottomStartRow, bottomEndRow };
+        }
+
+        function isObstacle(col, row) {
+            if (gameMode === 'easy') return false;
+
+            const bounds = getShelfBounds();
+            
+            if (row === gridRows - 1) {
+                for (let c of CAISSE_COLS) {
+                    if (col === c || col === c + 1) return true;
+                }
+            }
+
+            if (row >= bounds.topStartRow && row <= bounds.topEndRow) {
+                if (bounds.cols.includes(col)) return true;
+            }
+
+            if (row >= bounds.bottomStartRow && row <= bounds.bottomEndRow) {
+                if (bounds.cols.includes(col)) return true;
+            }
+
+            return false;
+        }
+
+        function getSafeShopperTarget() {
+            let valid = false;
+            let c, r;
+            let attempts = 0;
+            while (!valid && attempts < 150) {
+                attempts++;
+                c = Math.floor(Math.random() * GRID_COLS);
+                r = Math.floor(Math.random() * (gridRows - 2));
+                if (!isObstacle(c, r)) valid = true;
+            }
+            return { c: c || 2, r: r || 2 };
+        }
+
+        function spawnShopper() {
+            if (shoppers.length >= 4) return;
+            const entryCols = [2, 3, 12, 13, 24, 25];
+            const startCol = entryCols[Math.floor(Math.random() * entryCols.length)];
+            const shopperColors = ["#e11d48", "#2563eb", "#059669", "#7c3aed", "#d97706"];
+            const color = shopperColors[Math.floor(Math.random() * shopperColors.length)];
+
+            shoppers.push({
+                c: startCol,
+                r: 0,
+                dirX: 0,
+                dirY: 1,
+                state: "entering",
+                target: getSafeShopperTarget(),
+                shoppingTime: 60 + Math.floor(Math.random() * 80),
+                color: color
+            });
+        }
+
+        function updateShoppers() {
+            shopperSpawnTimer++;
+            if (shopperSpawnTimer % 50 === 0) {
+                spawnShopper();
+            }
+
+            shopperMoveCounter++;
+            if (shopperMoveCounter % 2 !== 0) return;
+
+            for (let i = shoppers.length - 1; i >= 0; i--) {
+                const s = shoppers[i];
+
+                if (s.state === "shopping") {
+                    s.shoppingTime--;
+                    if (s.shoppingTime <= 0) {
+                        s.state = "exiting";
+                        const checkoutPassageCols = [0, 1, 7, 8, 11, 12, 15, 16, 19, 20, 25, 26];
+                        const exitCol = checkoutPassageCols[Math.floor(Math.random() * checkoutPassageCols.length)];
+                        s.target = { c: exitCol, r: gridRows - 1 };
+                    }
+                }
+
+                if (s.c === s.target.c && s.r === s.target.r) {
+                    if (s.state === "entering") {
+                        s.state = "shopping";
+                        s.target = getSafeShopperTarget();
+                    } else if (s.state === "shopping") {
+                        s.target = getSafeShopperTarget();
+                    } else if (s.state === "exiting") {
+                        shoppers.splice(i, 1);
+                        continue;
+                    }
+                }
+
+                const possibleMoves = [];
+                const diffC = s.target.c - s.c;
+                const diffR = s.target.r - s.r;
+
+                if (diffC > 0) possibleMoves.push({ dc: 1, dr: 0, weight: 3 });
+                else if (diffC < 0) possibleMoves.push({ dc: -1, dr: 0, weight: 3 });
+
+                if (diffR > 0) possibleMoves.push({ dc: 0, dr: 1, weight: 3 });
+                else if (diffR < 0) possibleMoves.push({ dc: 0, dr: -1, weight: 3 });
+
+                const allDirs = [
+                    { dc: 0, dr: 1 }, { dc: 0, dr: -1 },
+                    { dc: 1, dr: 0 }, { dc: -1, dr: 0 }
+                ];
+                for (let d of allDirs) {
+                    if (!possibleMoves.some(m => m.dc === d.dc && m.dr === d.dr)) {
+                        possibleMoves.push({ dc: d.dc, dr: d.dr, weight: 1 });
+                    }
+                }
+
+                possibleMoves.sort((a, b) => b.weight - a.weight);
+
+                for (let m of possibleMoves) {
+                    const nextC = s.c + m.dc;
+                    const nextR = s.r + m.dr;
+
+                    if (nextC >= 0 && nextC < GRID_COLS && nextR >= 0 && nextR < gridRows) {
+                        const isExitCaisse = (s.state === "exiting" && nextR === gridRows - 1 && !isObstacle(nextC, nextR));
+                        if (!isObstacle(nextC, nextR) || isExitCaisse) {
+                            s.dirX = m.dc;
+                            s.dirY = m.dr;
+                            s.c = nextC;
+                            s.r = nextR;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        function drawShoppers() {
+            for (let s of shoppers) {
+                const x = s.c * gridSize;
+                const y = s.r * gridSize;
+
+                ctx.fillStyle = s.color;
+                ctx.beginPath();
+                ctx.arc(x + gridSize / 2, y + gridSize / 2, gridSize * 0.36, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = "#fcd34d";
+                ctx.beginPath();
+                ctx.arc(x + gridSize / 2, y + gridSize / 2, gridSize * 0.22, 0, Math.PI * 2);
+                ctx.fill();
+
+                const cartX = x + (s.dirX * gridSize * 0.45);
+                const cartY = y + (s.dirY * gridSize * 0.45);
+
+                ctx.strokeStyle = "#475569";
+                ctx.lineWidth = 1.2;
+                ctx.strokeRect(cartX + 2, cartY + 2, gridSize - 4, gridSize - 4);
+
+                ctx.fillStyle = "#E30613";
+                if (s.dirY !== 0) {
+                    ctx.fillRect(cartX + 3, cartY + (s.dirY > 0 ? 2 : gridSize - 4), gridSize - 6, 2);
+                } else {
+                    ctx.fillRect(cartX + (s.dirX > 0 ? 2 : gridSize - 4), cartY + 3, 2, gridSize - 6);
+                }
+
+                ctx.strokeStyle = "rgba(71, 85, 105, 0.4)";
+                ctx.lineWidth = 0.8;
+                ctx.beginPath();
+                ctx.moveTo(cartX + gridSize / 2, cartY + 2);
+                ctx.lineTo(cartX + gridSize / 2, cartY + gridSize - 2);
+                ctx.stroke();
+            }
+        }
+
+        function drawGrid() {
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = "rgba(0, 85, 164, 0.08)";
+            ctx.lineWidth = 1;
+            
+            ctx.beginPath();
+            for (let x = 0; x <= canvas.width; x += gridSize) {
+                ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height);
+            }
+            for (let y = 0; y <= canvas.height; y += gridSize) {
+                ctx.moveTo(0, y); ctx.lineTo(canvas.width, y);
+            }
+            ctx.stroke();
+
+            if (gameMode !== 'easy') {
+                const bounds = getShelfBounds();
+                drawSupermarketShelves(bounds);
+                drawCheckouts();
+            }
+        }
+
+        function drawSupermarketShelves(bounds) {
+            bounds.cols.forEach((col, idx) => {
+                const x = col * gridSize;
+                
+                const yTop = bounds.topStartRow * gridSize;
+                const hTop = (bounds.topEndRow - bounds.topStartRow + 1) * gridSize;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.roundRect(x + 1.5, yTop + 1, gridSize - 3, hTop - 2, 5);
+                
+                let topBorderColor = "#0055A4";
+                if (idx === 0) topBorderColor = "#E30613";
+                else if (idx === 1 || idx === 2) topBorderColor = "#16a34a";
+
+                ctx.strokeStyle = topBorderColor;
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+                ctx.clip();
+
+                for (let r = bounds.topStartRow; r <= bounds.topEndRow; r++) {
+                    const cy = r * gridSize;
+
+                    if (idx === 0) {
+                        ctx.fillStyle = (r % 2 === 0) ? "#E30613" : "#f59e0b";
+                        ctx.fillRect(x + 2, cy + 1, gridSize - 4, gridSize - 2);
+
+                        ctx.fillStyle = "#ffffff";
+                        ctx.font = `900 ${Math.floor(gridSize * 0.48)}px Montserrat, sans-serif`;
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "middle";
+                        ctx.fillText("%", x + gridSize / 2, cy + gridSize / 2);
+
+                    } else if (idx === 1) {
+                        ctx.fillStyle = "#fefce8";
+                        ctx.fillRect(x + 2, cy + 1, gridSize - 4, gridSize - 2);
+
+                        ctx.strokeStyle = "#86efac";
+                        ctx.lineWidth = 0.8;
+                        ctx.strokeRect(x + 2.5, cy + 1.5, gridSize - 5, gridSize - 3);
+
+                        const colors = ["#ef4444", "#22c55e", "#ef4444", "#22c55e"];
+                        const dotR = Math.max(1.2, gridSize * 0.08);
+                        ctx.fillStyle = colors[r % colors.length];
+                        ctx.beginPath();
+                        ctx.arc(x + gridSize * 0.35, cy + gridSize * 0.35, dotR, 0, Math.PI * 2);
+                        ctx.arc(x + gridSize * 0.65, cy + gridSize * 0.35, dotR, 0, Math.PI * 2);
+                        ctx.arc(x + gridSize * 0.35, cy + gridSize * 0.65, dotR, 0, Math.PI * 2);
+                        ctx.arc(x + gridSize * 0.65, cy + gridSize * 0.65, dotR, 0, Math.PI * 2);
+                        ctx.fill();
+
+                    } else if (idx === 2) {
+                        ctx.fillStyle = "#fbfbee";
+                        ctx.fillRect(x + 2, cy + 1, gridSize - 4, gridSize - 2);
+
+                        ctx.strokeStyle = "#cbd5e1";
+                        ctx.lineWidth = 0.8;
+                        ctx.strokeRect(x + 2.5, cy + 1.5, gridSize - 5, gridSize - 3);
+
+                        const dotColors = ["#8b5cf6", "#f59e0b", "#10b981"];
+                        const dotR = Math.max(1.2, gridSize * 0.08);
+                        for(let d = 0; d < 3; d++) {
+                            ctx.fillStyle = dotColors[(r + d) % dotColors.length];
+                            ctx.beginPath();
+                            ctx.arc(x + gridSize * (0.28 + d * 0.22), cy + gridSize / 2, dotR, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+
+                    } else {
+                        ctx.fillStyle = "#06b6d4";
+                        ctx.fillRect(x + 2, cy + 1, gridSize - 4, gridSize - 2);
+
+                        ctx.fillStyle = "#ffffff";
+                        ctx.fillRect(x + 3.5, cy + 2, gridSize - 7, 1.5);
+                        ctx.fillRect(x + 3.5, cy + gridSize - 3.5, gridSize - 7, 1.5);
+                    }
+
+                    ctx.fillStyle = "rgba(0,0,0,0.08)";
+                    ctx.fillRect(x + 2, cy + gridSize - 1, gridSize - 4, 1);
+                }
+                ctx.restore();
+
+                const yBottom = bounds.bottomStartRow * gridSize;
+                const hBottom = (bounds.bottomEndRow - bounds.bottomStartRow + 1) * gridSize;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.roundRect(x + 1.5, yBottom + 1, gridSize - 3, hBottom - 2, 5);
+                ctx.strokeStyle = "#0055A4";
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+                ctx.clip();
+
+                for (let r = bounds.bottomStartRow; r <= bounds.bottomEndRow; r++) {
+                    const cy = r * gridSize;
+
+                    if (idx === 0) {
+                        ctx.fillStyle = "#0284c7";
+                        ctx.fillRect(x + 2, cy + 1, gridSize - 4, gridSize - 2);
+                        ctx.fillStyle = "#ffffff";
+                        ctx.fillRect(x + 4, cy + gridSize / 2 - 1, gridSize - 8, 2);
+
+                    } else if (idx === 1) {
+                        ctx.fillStyle = (r % 2 === 0) ? "#d946ef" : "#c026d3";
+                        ctx.fillRect(x + 2, cy + 1, gridSize - 4, gridSize - 2);
+                        ctx.fillStyle = "#ffffff";
+                        ctx.fillRect(x + 4, cy + gridSize / 2 - 1, gridSize - 8, 2);
+
+                    } else if (idx === 2) {
+                        ctx.fillStyle = (r % 2 === 0) ? "#8b5cf6" : "#6366f1";
+                        ctx.fillRect(x + 2, cy + 1, gridSize - 4, gridSize - 2);
+                        ctx.fillStyle = "#ffffff";
+                        ctx.fillRect(x + 4, cy + gridSize / 2 - 1, gridSize - 8, 2);
+
+                    } else {
+                        ctx.fillStyle = "#0d9488";
+                        ctx.fillRect(x + 2, cy + 1, gridSize - 4, gridSize - 2);
+                        ctx.fillStyle = "#ffffff";
+                        ctx.fillRect(x + 4, cy + gridSize / 2 - 1, gridSize - 8, 2);
+                    }
+
+                    ctx.fillStyle = "rgba(0,0,0,0.08)";
+                    ctx.fillRect(x + 2, cy + gridSize - 1, gridSize - 4, 1);
+                }
+                ctx.restore();
+            });
+        }
+
+        function drawCheckouts() {
+            const y = (gridRows - 1) * gridSize;
+            const height = gridSize;
+            const width = 2 * gridSize;
+
+            CAISSE_COLS.forEach((col, i) => {
+                const x = col * gridSize;
+
+                ctx.fillStyle = "#1e293b";
+                ctx.beginPath();
+                ctx.roundRect(x, y + 1, width * 0.65, height - 2, 2);
+                ctx.fill();
+
+                ctx.strokeStyle = "#475569";
+                ctx.lineWidth = 1;
+                for (let lx = x + 3; lx < x + width * 0.65 - 2; lx += 3) {
+                    ctx.beginPath();
+                    ctx.moveTo(lx, y + 2);
+                    ctx.lineTo(lx, y + height - 2);
+                    ctx.stroke();
+                }
+
+                ctx.fillStyle = "#0055A4";
+                ctx.beginPath();
+                ctx.roundRect(x + width * 0.65 + 1, y + 1, width * 0.35 - 1, height - 2, 2);
+                ctx.fill();
+
+                ctx.fillStyle = "#22c55e";
+                ctx.fillRect(x + width * 0.65 + 3, y + 3, width * 0.35 - 7, 2);
+
+                ctx.fillStyle = "#E30613";
+                ctx.beginPath();
+                ctx.arc(x + 4, y + 4, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "bold 5px Montserrat";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(CAISSE_NUMS[i], x + 4, y + 4);
+            });
+        }
+
+        function drawSnakePart(part, index) {
+            if (index === 0) {
+                ctx.fillStyle = "#0055A4";
+                ctx.beginPath();
+                ctx.roundRect(part.x + 1, part.y + 1, gridSize - 2, gridSize - 2, 4);
+                ctx.fill();
+
+                ctx.fillStyle = "#E30613";
+                ctx.fillRect(part.x + 3, part.y + 3, gridSize - 6, gridSize - 6);
+
+                ctx.fillStyle = "#0f172a";
+                if (dx > 0) ctx.fillRect(part.x + gridSize - 5, part.y + 3, 3, gridSize - 6);
+                else if (dx < 0) ctx.fillRect(part.x + 2, part.y + 3, 3, gridSize - 6);
+                else if (dy > 0) ctx.fillRect(part.x + 3, part.y + gridSize - 5, gridSize - 6, 3);
+                else ctx.fillRect(part.x + 3, part.y + 2, gridSize - 6, 3);
+
+                ctx.fillStyle = "#facc15";
+                if (dx > 0) {
+                    ctx.fillRect(part.x + gridSize - 2, part.y + 2, 2, 2);
+                    ctx.fillRect(part.x + gridSize - 2, part.y + gridSize - 4, 2, 2);
+                } else if (dx < 0) {
+                    ctx.fillRect(part.x, part.y + 2, 2, 2);
+                    ctx.fillRect(part.x, part.y + gridSize - 4, 2, 2);
+                } else if (dy > 0) {
+                    ctx.fillRect(part.x + 2, part.y + gridSize - 2, 2, 2);
+                    ctx.fillRect(part.x + gridSize - 4, part.y + gridSize - 2, 2, 2);
+                } else {
+                    ctx.fillRect(part.x + 2, part.y, 2, 2);
+                    ctx.fillRect(part.x + gridSize - 4, part.y, 2, 2);
+                }
+            } else {
+                ctx.fillStyle = "rgba(186, 230, 253, 0.2)";
+                ctx.fillRect(part.x + 1, part.y + 1, gridSize - 2, gridSize - 2);
+
+                const radius = Math.max(3, (gridSize / 2) - 1.5);
+                const cx = part.x + gridSize / 2;
+                const cy = part.y + gridSize / 2;
+
+                ctx.fillStyle = "rgba(147, 197, 253, 0.75)";
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.strokeStyle = "#60a5fa";
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+                ctx.beginPath();
+                ctx.arc(cx - radius * 0.35, cy - radius * 0.35, radius * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function getRandomFoodType() {
+            const rand = Math.random();
+            let cumul = 0;
+            for (let d of DECHETS) {
+                cumul += d.proba;
+                if (rand <= cumul) return d;
+            }
+            return DECHETS[0];
+        }
+
+        function isPositionOccupied(col, row) {
+            if (isObstacle(col, row)) return true;
+            for (let part of snake) {
+                if (part.x === col * gridSize && part.y === row * gridSize) return true;
+            }
+            for (let f of foods) {
+                if (f.x === col * gridSize && f.y === row * gridSize) return true;
+            }
+            if (gameMode === 'hard') {
+                for (let s of shoppers) {
+                    if (s.c === col && s.r === row) return true;
+                }
+            }
+            return false;
+        }
+
+        function generateFood() {
+            let valid = false;
+            let rCol, rRow;
+            let attempts = 0;
+            
+            const maxRowBound = (gameMode === 'easy') ? gridRows : (gridRows - 1);
+
+            while (!valid && attempts < 200) {
+                attempts++;
+                rCol = Math.floor(Math.random() * GRID_COLS);
+                rRow = Math.floor(Math.random() * maxRowBound);
+                
+                if (!isPositionOccupied(rCol, rRow)) {
+                    valid = true;
+                }
+            }
+            
+            if (valid) {
+                foods.push({
+                    x: rCol * gridSize,
+                    y: rRow * gridSize,
+                    item: getRandomFoodType()
+                });
+            }
+        }
+
+        function spawnZoneFoods(zone, count) {
+            if (gameMode === 'easy') return;
+
+            const bounds = getShelfBounds();
+            const midRow = Math.floor(gridRows * 0.48);
+
+            let minCol = 0, maxCol = GRID_COLS - 1;
+            let minRow = 0, maxRow = gridRows - 2;
+
+            if (zone === "promo") {
+                minCol = 0;
+                maxCol = 13;
+                minRow = 0;
+                maxRow = midRow - 1;
+            } else if (zone === "alcools") {
+                minCol = 22;
+                maxCol = GRID_COLS - 1;
+                minRow = Math.max(0, bounds.topStartRow - 2);
+                maxRow = bounds.topEndRow + 2;
+            } else if (zone === "caisses") {
+                minCol = 0;
+                maxCol = GRID_COLS - 1;
+                minRow = Math.max(0, gridRows - 6);
+                maxRow = gridRows - 2;
+            }
+
+            let spawned = 0;
+            let attempts = 0;
+            while (spawned < count && attempts < 400) {
+                attempts++;
+                let rCol = Math.floor(Math.random() * (maxCol - minCol + 1)) + minCol;
+                let rRow = Math.floor(Math.random() * (maxRow - minRow + 1)) + minRow;
+
+                if (!isPositionOccupied(rCol, rRow)) {
+                    foods.push({
+                        x: rCol * gridSize,
+                        y: rRow * gridSize,
+                        item: getRandomFoodType()
+                    });
+                    spawned++;
+                }
+            }
+        }
+
+        function drawSingleFood(food) {
+            const cx = food.x + gridSize / 2;
+            const cy = food.y + gridSize / 2;
+            const currentFood = food.item;
+
+            if (currentFood.type === "Pipi") {
+                ctx.fillStyle = "#facc15";
+                ctx.beginPath();
+                ctx.ellipse(cx, cy + 1, gridSize * 0.42, gridSize * 0.28, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = "#eab308";
+                ctx.beginPath();
+                ctx.ellipse(cx - 1, cy + 2, gridSize * 0.28, gridSize * 0.16, 0.2, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = "#facc15";
+                ctx.beginPath();
+                ctx.arc(cx + gridSize * 0.32, cy - gridSize * 0.2, gridSize * 0.08, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+                ctx.beginPath();
+                ctx.ellipse(cx - gridSize * 0.15, cy - gridSize * 0.08, gridSize * 0.12, gridSize * 0.05, -0.2, 0, Math.PI * 2);
+                ctx.fill();
+
+            } else if (currentFood.type === "Mouchoir") {
+                ctx.fillStyle = "rgba(0,0,0,0.12)";
+                ctx.beginPath();
+                ctx.ellipse(cx, cy + gridSize * 0.28, gridSize * 0.38, gridSize * 0.14, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = "#f8fafc";
+                ctx.strokeStyle = "#cbd5e1";
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(cx - gridSize * 0.36, cy + gridSize * 0.12);
+                ctx.lineTo(cx - gridSize * 0.15, cy - gridSize * 0.35);
+                ctx.lineTo(cx + gridSize * 0.05, cy - gridSize * 0.12);
+                ctx.lineTo(cx + gridSize * 0.34, cy - gridSize * 0.32);
+                ctx.lineTo(cx + gridSize * 0.38, cy + gridSize * 0.2);
+                ctx.lineTo(cx + gridSize * 0.08, cy + gridSize * 0.32);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.strokeStyle = "#94a3b8";
+                ctx.lineWidth = 0.9;
+                ctx.beginPath();
+                ctx.moveTo(cx - gridSize * 0.15, cy - gridSize * 0.35);
+                ctx.lineTo(cx, cy + gridSize * 0.1);
+                ctx.lineTo(cx + gridSize * 0.34, cy - gridSize * 0.32);
+                ctx.moveTo(cx - gridSize * 0.2, cy + gridSize * 0.05);
+                ctx.lineTo(cx + gridSize * 0.15, cy + gridSize * 0.15);
+                ctx.stroke();
+
+            } else {
+                ctx.font = (gridSize * 0.85) + "px Arial";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(currentFood.emoji, cx, cy);
+            }
+        }
+
+        function drawFoods() {
+            for (let f of foods) {
+                drawSingleFood(f);
+            }
+        }
+
+        function advanceSnake() {
+            if (inputQueue.length > 0) {
+                const nextMove = inputQueue.shift();
+                dx = nextMove.dx;
+                dy = nextMove.dy;
+            }
+
+            const headX = snake[0].x + dx;
+            const headY = snake[0].y + dy;
+
+            if (headX < 0 || headX >= canvas.width || headY < 0 || headY >= canvas.height) {
+                showGameOver(); return;
+            }
+
+            const headCol = Math.floor(headX / gridSize);
+            const headRow = Math.floor(headY / gridSize);
+
+            if (isObstacle(headCol, headRow)) {
+                showGameOver(); return;
+            }
+
+            if (gameMode === 'hard') {
+                for (let s of shoppers) {
+                    if (s.c === headCol && s.r === headRow) {
+                        showGameOver(); return;
+                    }
+                }
+            }
+
+            const head = {x: headX, y: headY};
+            snake.unshift(head);
+            
+            let eatenIndex = -1;
+            for (let i = 0; i < foods.length; i++) {
+                if (head.x === foods[i].x && head.y === foods[i].y) {
+                    eatenIndex = i;
+                    break;
+                }
+            }
+
+            if (eatenIndex !== -1) {
+                const eatenFood = foods[eatenIndex];
+                foods.splice(eatenIndex, 1);
+
+                const ptsGagnes = gameMode === 'hard' ? Math.round(eatenFood.item.points * 1.5) : eatenFood.item.points;
+                score += ptsGagnes;
+
+                let displayText = eatenFood.item.type === "Pipi" ? `+${ptsGagnes} PIPI` : `+${ptsGagnes}`;
+                floatingTexts.push({text: displayText, x: eatenFood.x, y: eatenFood.y, color: eatenFood.item.color, life: 1.0});
+                
+                document.getElementById('scoreDisplay').innerHTML = "🧼 PROPRETÉ: " + score;
+                playSound('eat');
+                createExplosion(eatenFood.x, eatenFood.y, eatenFood.item.color);
+
+                if (foods.length === 0) {
+                    generateFood();
+                }
+                
+                if (vitesseJeu > 65) vitesseJeu -= 1.5;
+            } else {
+                snake.pop(); 
+            }
+
+            for (let i = 4; i < snake.length; i++) {
+                if (snake[i].x === head.x && snake[i].y === head.y) {
+                    showGameOver(); return;
+                }
+            }
+        }
+
+        function createExplosion(x, y, color) {
+            for (let i = 0; i < 12; i++) {
+                particles.push({
+                    x: x + gridSize / 2, y: y + gridSize / 2,
+                    vx: (Math.random() - 0.5) * 6, vy: (Math.random() - 0.5) * 6,
+                    color: color, alpha: 1, size: Math.random() * 3 + 1.5
+                });
+            }
+        }
+
+        function drawEffects() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx; p.y += p.vy;
+                p.alpha -= 0.05;
+                if (p.alpha <= 0) { particles.splice(i, 1); continue; }
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+            }
+            ctx.globalAlpha = 1.0;
+
+            for(let i = floatingTexts.length -1; i >= 0; i--) {
+                let ft = floatingTexts[i];
+                ft.y -= 0.8;
+                ft.life -= 0.025;
+                if(ft.life <= 0) { floatingTexts.splice(i, 1); continue; }
+                
+                ctx.globalAlpha = ft.life;
+                ctx.font = "bold 15px Montserrat";
+                ctx.textAlign = "center";
+                ctx.fillStyle = ft.color;
+                ctx.strokeStyle = "#fff";
+                ctx.lineWidth = 3;
+                ctx.strokeText(ft.text, ft.x + gridSize/2, ft.y);
+                ctx.fillText(ft.text, ft.x + gridSize/2, ft.y);
+            }
+            ctx.globalAlpha = 1.0;
+        }
+
+        function startGame(mode = 'normal') {
+            gameMode = mode;
+            document.getElementById('startScreen').style.display = "none";
+            initAudio();
+            currentAudioIndex = 0;
+            playNextMusic();
+            gameStarted = true;
+            resizeGameCanvas();
+            initGame();
+            startMessageCycle();
+        }
+
+        function initGame() {
+            score = 0;
+            if (gameMode === 'hard') vitesseJeu = 135;
+            else if (gameMode === 'easy') vitesseJeu = 165;
+            else vitesseJeu = 150;
+
+            dx = gridSize;
+            dy = 0;
+            isGameOverState = false;
+            particles = [];
+            floatingTexts = [];
+            inputQueue = [];
+            foods = [];
+            shoppers = [];
+            shopperSpawnTimer = 0;
+            shopperMoveCounter = 0;
+            
+            document.getElementById('scoreDisplay').innerHTML = "🧼 PROPRETÉ: 0";
+            document.getElementById('gameOverScreen').style.display = "none";
+            document.getElementById('scoreForm').style.display = "flex";
+            document.getElementById('scoreSubmittedMsg').style.display = "none";
+            document.getElementById('playerNameInput').value = "";
+            
+            snake = [];
+            const startY = 4 * gridSize;
+            const startX = 12 * gridSize;
+            for(let i = 0; i < 5; i++){ 
+                snake.push({x: startX - (i * gridSize), y: startY});
+            }
+
+            generateFood();
+            chargerClassement();
+            main();
+        }
+
+        function main() {
+            if (isGameOverState) return;
+            gameLoopTimeout = setTimeout(function() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawGrid();
+                drawFoods();
+
+                if (gameMode === 'hard') {
+                    updateShoppers();
+                    drawShoppers();
+                }
+
+                advanceSnake();
+                
+                for(let i = snake.length - 1; i >= 0; i--) {
+                    drawSnakePart(snake[i], i);
+                }
+                
+                drawEffects();
+                main();
+            }, vitesseJeu); 
+        }
+
+        function showGameOver() {
+            isGameOverState = true;
+            stopMessageCycle();
+            stopMusic();
+            playSound('die');
+            document.getElementById("finalScore").innerText = score;
+            document.getElementById("gameOverScreen").style.display = "flex";
+            chargerClassement();
+        }
+
+        function resetGame() {
+            clearTimeout(gameLoopTimeout);
+            document.getElementById('gameOverScreen').style.display = "none";
+            document.getElementById('startScreen').style.display = "flex";
+            gameStarted = false;
+        }
+
+        document.addEventListener("keydown", function(e) {
+            if (!gameStarted && e.key === "Enter") { startGame('normal'); return; }
+            if (isGameOverState && e.key === "Enter") { validerScore(); return; }
+            if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key)) e.preventDefault();
+            
+            const LEFT = 37, UP = 38, RIGHT = 39, DOWN = 40;
+            let lastDir = inputQueue.length > 0 ? inputQueue[inputQueue.length - 1] : { dx, dy };
+            
+            if (e.keyCode === LEFT && lastDir.dx !== gridSize) inputQueue.push({dx: -gridSize, dy: 0});
+            else if (e.keyCode === UP && lastDir.dy !== gridSize) inputQueue.push({dx: 0, dy: -gridSize});
+            else if (e.keyCode === RIGHT && lastDir.dx !== -gridSize) inputQueue.push({dx: gridSize, dy: 0});
+            else if (e.keyCode === DOWN && lastDir.dy !== -gridSize) inputQueue.push({dx: 0, dy: gridSize});
+        });
+
+        let touchStartX = 0, touchStartY = 0;
+        document.addEventListener('touchstart', e => {
+            if (!gameStarted || isGameOverState) return;
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, {passive: false});
+
+        document.addEventListener('touchmove', e => {
+            if(gameStarted && !isGameOverState && e.target === canvas) e.preventDefault();
+        }, {passive: false});
+
+        document.addEventListener('touchend', e => {
+            if (!gameStarted || isGameOverState) return;
+            let diffX = e.changedTouches[0].screenX - touchStartX;
+            let diffY = e.changedTouches[0].screenY - touchStartY;
+            if (Math.abs(diffX) < 25 && Math.abs(diffY) < 25) return;
+            
+            let lastDir = inputQueue.length > 0 ? inputQueue[inputQueue.length - 1] : { dx, dy };
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                if (diffX > 0 && lastDir.dx !== -gridSize) inputQueue.push({dx: gridSize, dy: 0});
+                else if (diffX < 0 && lastDir.dx !== gridSize) inputQueue.push({dx: -gridSize, dy: 0});
+            } else {
+                if (diffY > 0 && lastDir.dy !== -gridSize) inputQueue.push({dx: 0, dy: gridSize});
+                else if (diffY < 0 && lastDir.dy !== gridSize) inputQueue.push({dx: 0, dy: -gridSize});
+            }
+        }, {passive: false});
+
+        window.addEventListener('resize', () => { if(!gameStarted) resizeGameCanvas(); });
+        
+        chargerClassement();
+    </script>
+</body>
+</html>
