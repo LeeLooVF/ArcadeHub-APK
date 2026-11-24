@@ -1380,40 +1380,59 @@
     }
 
     /* ==========================================================================
-       11. CLASSEMENT TOP 10 (LOCALSTORAGE PERSISTANT SANS BOUTON SUPPRIMER)
+       11. CLASSEMENT TOP 10 (CLOUDFLARE WORKER + KV)
        ========================================================================== */
-    const STORAGE_KEY = 'bar_challenge_top10_v2';
+    const API_URL = "https://arcade-hub-api.kjh27r4i-70a.workers.dev/?game=dernierverre";
 
-    function getTop10() {
+    function escapeHtml(text) {
+      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+      return String(text).replace(/[&<>"']/g, m => map[m]);
+    }
+
+    async function getTop10() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? JSON.parse(raw) : [];
+        const res = await fetch(API_URL);
+        if (!res.ok) return [];
+        const data = await res.json();
+        return Array.isArray(data) ? data : [];
       } catch (e) {
         return [];
       }
     }
 
-    function saveScore(pseudo) {
+    async function saveScore(pseudo) {
       const sanitizedPseudo = (pseudo.trim() || 'Anonyme').substring(0, 20);
-      const entry = {
+      const payload = {
+        pseudo: sanitizedPseudo,
         name: sanitizedPseudo,
+        score: bloodAlcohol,
         bac: bloodAlcohol,
         glasses: glassesDrunk,
-        drinkName: DRINKS[selectedDrinkIndex].name,
-        date: new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+        drinkName: DRINKS[selectedDrinkIndex].name
       };
 
-      let list = getTop10();
-      list.push(entry);
-      list.sort((a, b) => b.bac - a.bac);
-      list = list.slice(0, 10);
+      try {
+        await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (e) {
+        console.error('Erreur envoi score :', e);
+      }
 
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-      openTop10Modal();
+      await openTop10Modal();
     }
 
-    function openTop10Modal() {
-      const list = getTop10();
+    async function openTop10Modal() {
+      dom.top10List.innerHTML = `
+        <div class="text-center py-8 text-stone-400 text-xs italic">
+          Chargement du classement...
+        </div>
+      `;
+      dom.modalTop10.classList.remove('hidden');
+
+      const list = await getTop10();
       dom.top10List.innerHTML = '';
 
       if (list.length === 0) {
@@ -1422,34 +1441,38 @@
             Aucun record enregistré pour le moment.<br>Soyez le premier à poser votre nom !
           </div>
         `;
-      } else {
-        list.forEach((item, index) => {
-          const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
-          const isTop3 = index < 3;
-
-          const row = document.createElement('div');
-          row.className = `flex items-center justify-between p-2 rounded-xl border ${
-            isTop3 ? 'bg-amber-950/40 border-amber-600/50' : 'bg-stone-950/60 border-stone-800'
-          }`;
-
-          row.innerHTML = `
-            <div class="flex items-center gap-2 min-w-0 pr-1">
-              <span class="text-sm font-bold w-6 text-center flex-shrink-0">${medal}</span>
-              <div class="min-w-0">
-                <span class="text-xs font-black text-stone-100 truncate block leading-tight">${item.name}</span>
-                <span class="text-[9px] text-stone-400 font-medium">${item.glasses} verres • ${item.drinkName}</span>
-              </div>
-            </div>
-            <div class="text-right flex-shrink-0 pl-1">
-              <span class="text-xs font-black text-rose-400 block leading-tight">${item.bac.toFixed(2)} g/L</span>
-              <span class="text-[8px] text-stone-500 font-mono">${item.date}</span>
-            </div>
-          `;
-          dom.top10List.appendChild(row);
-        });
+        return;
       }
 
-      dom.modalTop10.classList.remove('hidden');
+      list.forEach((item, index) => {
+        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
+        const isTop3 = index < 3;
+        const bacValue = Number(item.bac ?? item.score ?? 0);
+        const glassesText = item.glasses !== undefined ? `${item.glasses} verres • ` : '';
+        const drinkText = item.drinkName ? escapeHtml(item.drinkName) : '';
+        const metaText = `${glassesText}${drinkText}`.replace(/•\s*$/, '');
+        const dateText = item.date ? escapeHtml(item.date) : '';
+
+        const row = document.createElement('div');
+        row.className = `flex items-center justify-between p-2 rounded-xl border ${
+          isTop3 ? 'bg-amber-950/40 border-amber-600/50' : 'bg-stone-950/60 border-stone-800'
+        }`;
+
+        row.innerHTML = `
+          <div class="flex items-center gap-2 min-w-0 pr-1">
+            <span class="text-sm font-bold w-6 text-center flex-shrink-0">${medal}</span>
+            <div class="min-w-0">
+              <span class="text-xs font-black text-stone-100 truncate block leading-tight">${escapeHtml(item.pseudo || item.name || 'Anonyme')}</span>
+              <span class="text-[9px] text-stone-400 font-medium">${metaText}</span>
+            </div>
+          </div>
+          <div class="text-right flex-shrink-0 pl-1">
+            <span class="text-xs font-black text-rose-400 block leading-tight">${bacValue.toFixed(2)} g/L</span>
+            <span class="text-[8px] text-stone-500 font-mono">${dateText}</span>
+          </div>
+        `;
+        dom.top10List.appendChild(row);
+      });
     }
 
     /* ==========================================================================

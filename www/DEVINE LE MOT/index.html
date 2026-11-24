@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
@@ -411,7 +411,7 @@
         <div class="header" id="gameHeader">
             <div class="header-left">
                 <div class="level-indicator" id="levelIndicator">Énigme 1 / 10</div>
-                <button class="top-ten-header-btn" onclick="openLeaderboard(); event.stopPropagation();">🏆 Top 10 des scores</button>
+                <button type="button" class="top-ten-header-btn" onclick="openLeaderboard(); event.stopPropagation();">🏆 Top 10 des scores</button>
             </div>
             <div class="score-display">Score : <span id="scoreVal">0</span></div>
         </div>
@@ -424,8 +424,8 @@
 
         <!-- Boutons d'action (au-dessus de l'image) -->
         <div class="controls" id="controlsArea">
-            <button class="btn-validate" id="validateBtn" onclick="validateAnswer(); event.stopPropagation();">Valider</button>
-            <button class="btn-next" id="nextBtn" onclick="nextLevel(); event.stopPropagation();">Suivant</button>
+            <button type="button" class="btn-validate" id="validateBtn" onclick="validateAnswer(); event.stopPropagation();">Valider</button>
+            <button type="button" class="btn-next" id="nextBtn" onclick="nextLevel(); event.stopPropagation();">Suivant</button>
         </div>
 
         <!-- Image de l'énigme -->
@@ -442,7 +442,7 @@
                 <p style="margin-bottom: 4px;">Enregistre ton score :</p>
                 <div class="input-group">
                     <input type="text" id="playerName" placeholder="Ton pseudo" maxlength="12">
-                    <button class="btn-validate" id="saveScoreBtn" onclick="saveScore()" style="flex: 0.6; padding: 8px;">Enregistrer</button>
+                    <button type="button" class="btn-validate" id="saveScoreBtn" onclick="saveScore()" style="flex: 0.6; padding: 8px;">Enregistrer</button>
                 </div>
             </div>
 
@@ -453,7 +453,7 @@
                 </ul>
             </div>
 
-            <button class="btn-restart" onclick="restartGame()">Rejouer</button>
+            <button type="button" class="btn-restart" onclick="restartGame()">Rejouer</button>
         </div>
     </div>
 
@@ -462,12 +462,12 @@
         <div class="modal-content" onclick="event.stopPropagation()">
             <div class="modal-header">
                 <h3>🏆 Top 10 des Meilleurs Scores</h3>
-                <button class="close-modal" onclick="closeLeaderboard()">&times;</button>
+                <button type="button" class="close-modal" onclick="closeLeaderboard()">&times;</button>
             </div>
             <ul id="modalLeaderboardList" class="leaderboard-list">
                 <li class="leaderboard-item" style="justify-content:center; color:#9ca3af;">Chargement...</li>
             </ul>
-            <button class="btn-close-modal" onclick="closeLeaderboard()">Fermer</button>
+            <button type="button" class="btn-close-modal" onclick="closeLeaderboard()">Fermer</button>
         </div>
     </div>
 
@@ -475,7 +475,7 @@
         const API_URL = "https://arcade-hub-api.kjh27r4i-70a.workers.dev/?game=devinettes";
 
         const levels = [
-            { image: "pègre.jpg", word: "PEGRE", pattern: [false, true, true, true, true] },
+            { image: "pegre.jpg", word: "PEGRE", pattern: [false, true, true, true, true] },
             { image: "arbre.jpg", word: "ARBRE", pattern: [true, true, false, false, true] },
             { image: "juin.jpg", word: "JUIN", pattern: [true, true, true, false] },
             { image: "navi.jpg", word: "NAVI", pattern: [true, true, false, true] },
@@ -512,7 +512,7 @@
         const hiddenInput = document.getElementById("hiddenInput");
 
         function keepKeyboardOpen() {
-            if (gameOverScreen.style.display === "flex" || !leaderboardModal.classList.contains("hidden")) return;
+            if (gameOverScreen.style.display === "flex" || !leaderboardModal.classList.contains("hidden") || isAnswerChecked) return;
             hiddenInput.focus();
             window.scrollTo(0, 0);
         }
@@ -540,7 +540,7 @@
             const level = levels[currentLevel];
             const targetWord = level.word;
             const pattern = level.pattern;
-            
+
             let inputIndex = 0;
             for (let i = 0; i < targetWord.length; i++) {
                 const box = document.createElement("div");
@@ -561,7 +561,7 @@
             }
         }
 
-        hiddenInput.addEventListener("input", (e) => {
+        hiddenInput.addEventListener("input", () => {
             if (gameOverScreen.style.display === "flex" || isAnswerChecked) return;
 
             const level = levels[currentLevel];
@@ -573,21 +573,23 @@
 
             for (let i = 0; i < val.length && userInput.length < totalInputsNeeded; i++) {
                 const char = val[i];
-                if (char >= 'A' && char <= 'Z') {
+                if (char >= "A" && char <= "Z") {
                     userInput.push(char);
                 }
             }
 
+            hiddenInput.value = userInput.join("");
             renderWordBoxes();
             window.scrollTo(0, 0);
         });
 
         hiddenInput.addEventListener("keydown", (e) => {
             if (e.key === "Enter") {
-                if (isAnswerChecked && nextBtn.style.display === "block") {
-                    nextLevel();
-                } else {
+                e.preventDefault();
+                if (!isAnswerChecked) {
                     validateAnswer();
+                } else if (nextBtn.style.display === "block") {
+                    nextLevel();
                 }
             }
         });
@@ -630,15 +632,16 @@
                 scoreVal.textContent = score;
                 statusMessage.textContent = "CORRECT ! Bien joué 🎉";
                 statusMessage.className = "status-message success";
-                for (let box of boxes) {
-                    box.classList.add("correct");
+                for (let i = 0; i < boxes.length; i++) {
+                    boxes[i].classList.remove("filled");
+                    boxes[i].classList.add("correct");
                 }
             } else {
                 statusMessage.textContent = `INCORRECT ! La bonne réponse était : ${targetWord}`;
                 statusMessage.className = "status-message error";
                 for (let i = 0; i < boxes.length; i++) {
-                    boxes[i].textContent = targetWord[i];
-                    boxes[i].className = "letter-box incorrect";
+                    boxes[i].classList.remove("filled");
+                    boxes[i].classList.add("incorrect");
                 }
             }
 
@@ -676,14 +679,14 @@
         async function saveScore() {
             if (scoreSaved) return;
             const nameInput = document.getElementById("playerName").value.trim() || "Anonyme";
-            
+
             saveScoreBtn.disabled = true;
             saveScoreBtn.textContent = "Envoi...";
 
             try {
                 await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ name: nameInput, score: score })
                 });
                 scoreSaved = true;
@@ -703,7 +706,7 @@
                 const leaderboard = await res.json();
                 leaderboardList.innerHTML = "";
 
-                if (!leaderboard || leaderboard.length === 0) {
+                if (!Array.isArray(leaderboard) || leaderboard.length === 0) {
                     leaderboardList.innerHTML = "<li class='leaderboard-item' style='justify-content:center; color:#9ca3af;'>Aucun score enregistré</li>";
                     return;
                 }
@@ -721,14 +724,14 @@
 
         async function openLeaderboard() {
             modalLeaderboardList.innerHTML = "<li class='leaderboard-item' style='justify-content:center; color:#9ca3af;'>Chargement du Top 10...</li>";
-            leaderboardModal.classList.remove('hidden');
+            leaderboardModal.classList.remove("hidden");
 
             try {
                 const res = await fetch(API_URL);
                 const leaderboard = await res.json();
                 modalLeaderboardList.innerHTML = "";
 
-                if (!leaderboard || leaderboard.length === 0) {
+                if (!Array.isArray(leaderboard) || leaderboard.length === 0) {
                     modalLeaderboardList.innerHTML = "<li class='leaderboard-item' style='justify-content:center; color:#9ca3af;'>Aucun score enregistré pour l'instant.</li>";
                     return;
                 }
@@ -745,13 +748,13 @@
         }
 
         function closeLeaderboard() {
-            leaderboardModal.classList.add('hidden');
+            leaderboardModal.classList.add("hidden");
             setTimeout(keepKeyboardOpen, 100);
         }
 
         function escapeHtml(text) {
-            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-            return text.replace(/[&<>"']/g, m => map[m]);
+            const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
+            return String(text ?? "").replace(/[&<>"']/g, m => map[m]);
         }
 
         function restartGame() {
