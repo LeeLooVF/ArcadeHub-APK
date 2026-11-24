@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Arcade Hub - Choisis ton Défi</title>
 
+    <link rel="icon" type="image/png" href="./icon.png">
+    <link rel="apple-touch-icon" href="./icon.png">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -81,7 +84,15 @@
 </head>
 <body class="min-h-screen flex flex-col items-center justify-between p-5 sm:p-8 text-gray-100 selection:bg-fuchsia-500 selection:text-white">
 
-    <header class="text-center pt-2 sm:pt-4 mb-8 max-w-2xl">
+    <!-- Barre supérieure : État des services -->
+    <div class="w-full max-w-6xl flex justify-end mb-2">
+        <button id="btn-status-modal" type="button" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-gray-900/90 hover:bg-gray-800 border border-indigo-500/50 text-xs font-bold text-gray-200 shadow-lg backdrop-blur-md transition active:scale-95">
+            <span id="status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>Services &amp; MAJ</span>
+        </button>
+    </div>
+
+    <header class="text-center pt-1 sm:pt-2 mb-8 max-w-2xl">
         <div class="inline-flex items-center gap-2.5 px-4 py-1.5 mb-4 rounded-full bg-gray-800/70 border border-gray-700/80 text-xs font-bold tracking-widest text-gray-300 uppercase backdrop-blur-md shadow-inner">
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
             Arcade &amp; Quiz Hub
@@ -317,8 +328,133 @@
 
     <footer class="mt-12 text-center">
         <p class="text-gray-500 text-xs sm:text-sm font-semibold tracking-wide">
-            © 2026 — Hub Arcade · 11 Défis disponibles
+            © 2026 — Hub Arcade · 11 Défis disponibles · <span id="footer-version">v1.1.0</span>
         </p>
     </footer>
+
+    <!-- MODALE ÉTAT DES SERVICES, QUOTA & MISE À JOUR -->
+    <div id="modal-services" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-700/80 rounded-2xl w-full max-w-sm p-5 text-gray-100 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-gray-800 pb-3 mb-4">
+                <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+                    <span>⚙️</span>
+                    <span>État des services</span>
+                </h3>
+                <button id="btn-close-services" type="button" class="text-gray-400 hover:text-white text-xl font-bold px-1">✕</button>
+            </div>
+
+            <div class="space-y-2.5 text-xs sm:text-sm mb-5">
+                <div class="flex items-center justify-between bg-gray-800/80 border border-gray-700/60 px-3.5 py-2.5 rounded-xl">
+                    <span class="text-gray-300">Réseau / Internet</span>
+                    <strong id="svc-net-state" class="text-emerald-400">En ligne</strong>
+                </div>
+                <div class="flex items-center justify-between bg-gray-800/80 border border-gray-700/60 px-3.5 py-2.5 rounded-xl">
+                    <span class="text-gray-300">API Classements</span>
+                    <strong id="svc-api-state" class="text-amber-400">Vérification...</strong>
+                </div>
+                <div class="flex items-center justify-between bg-gray-800/80 border border-gray-700/60 px-3.5 py-2.5 rounded-xl">
+                    <span class="text-gray-300">Quota KV (jour)</span>
+                    <strong id="svc-quota-state" class="text-sky-400">0 / 100 000 req</strong>
+                </div>
+                <div class="flex items-center justify-between bg-gray-800/80 border border-gray-700/60 px-3.5 py-2.5 rounded-xl">
+                    <span class="text-gray-300">Version appli</span>
+                    <strong id="app-version-label" class="text-violet-400">v1.1.0</strong>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-2.5">
+                <button id="btn-refresh-ui" type="button" class="w-full py-2.5 px-4 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-600/60 text-white font-bold text-xs sm:text-sm transition active:scale-95">
+                    🔄 Actualiser l'interface
+                </button>
+                <a id="btn-download-update" href="https://github.com/LeeLooVF/ArcadeHub-APK/releases/latest/download/ArcadeHub.apk" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-extrabold text-xs sm:text-sm text-center shadow-lg transition active:scale-95 block">
+                    ⬇️ Télécharger &amp; installer la MAJ
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            const APP_VERSION = "v1.1.0";
+            const API_PING_URL = "https://arcade-hub-api.kjh27r4i-70a.workers.dev/?game=devinettes";
+
+            const btnOpen = document.getElementById("btn-status-modal");
+            const btnClose = document.getElementById("btn-close-services");
+            const modal = document.getElementById("modal-services");
+            const dot = document.getElementById("status-dot");
+            const netState = document.getElementById("svc-net-state");
+            const apiState = document.getElementById("svc-api-state");
+            const quotaState = document.getElementById("svc-quota-state");
+            const versionLabel = document.getElementById("app-version-label");
+            const footerVersion = document.getElementById("footer-version");
+            const btnRefresh = document.getElementById("btn-refresh-ui");
+
+            versionLabel.textContent = APP_VERSION;
+            footerVersion.textContent = APP_VERSION;
+
+            function getDailyQuotaCount(increment) {
+                const today = new Date().toISOString().slice(0, 10);
+                const key = "hub_kv_calls_" + today;
+                let count = Number(localStorage.getItem(key) || 0);
+                if (increment) {
+                    count += 1;
+                    localStorage.setItem(key, String(count));
+                }
+                return count;
+            }
+
+            async function checkServices() {
+                if (navigator.onLine) {
+                    netState.textContent = "En ligne";
+                    netState.className = "text-emerald-400";
+                } else {
+                    netState.textContent = "Hors ligne";
+                    netState.className = "text-rose-400";
+                }
+
+                apiState.textContent = "Test...";
+                apiState.className = "text-amber-400";
+                quotaState.textContent = `${getDailyQuotaCount(false)} / 100 000 req`;
+
+                const start = performance.now();
+                try {
+                    const res = await fetch(API_PING_URL, { cache: "no-store" });
+                    const ms = Math.round(performance.now() - start);
+                    if (res.ok) {
+                        apiState.textContent = `En ligne (${ms} ms)`;
+                        apiState.className = "text-emerald-400";
+                        dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse";
+                        const used = getDailyQuotaCount(true);
+                        quotaState.textContent = `${used} / 100 000 req`;
+                    } else {
+                        throw new Error("HTTP " + res.status);
+                    }
+                } catch (e) {
+                    apiState.textContent = "Hors ligne";
+                    apiState.className = "text-rose-400";
+                    dot.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
+                }
+            }
+
+            btnOpen.addEventListener("click", () => {
+                modal.classList.remove("hidden");
+                checkServices();
+            });
+
+            btnClose.addEventListener("click", () => {
+                modal.classList.add("hidden");
+            });
+
+            modal.addEventListener("click", (e) => {
+                if (e.target === modal) modal.classList.add("hidden");
+            });
+
+            btnRefresh.addEventListener("click", () => {
+                const url = new URL(window.location.href);
+                url.searchParams.set("v", Date.now());
+                window.location.replace(url.toString());
+            });
+        })();
+    </script>
 </body>
 </html>
